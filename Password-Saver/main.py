@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 ######################
 # PASSWORD GENERATOR #
@@ -34,31 +35,71 @@ def generate_password():
 #################
 
 def save_password():
-    data = []
-    data.append(website_input.get())
-    data.append(username_input.get())
-    data.append(password_input.get())
+    website = website_input.get()
+    username = username_input.get()
+    password = password_input.get()
+    data = {
+        website: {
+            "username": username,
+            "password": password,
+        }
+    }
 
-    if len(data[0]) == 0 or len(data[1]) == 0 or len(data[2]) == 0:
+    if len(password) == 0 or  len(website) == 0:
         messagebox.showinfo(title="Oops", message="Please don't leave any fields empty.")
     else:
-        is_ok = messagebox.askokcancel(title=data[0], message=f"These are the details entered: \nEmail : {data[1]} "
-                            f"\nPassword: {data[2]} \nIs it ok to save")
-        
-        if is_ok:
+        try:
+            with open('data.json', 'r') as data_file:
+                # reading old data
+                load_data = json.load(data_file)
+        # If json file doesn't exist create it and write data to file
+        except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                json.dump(data, data_file, indent=4)
+        else:
+            # Updating old data with new data
+            load_data.update(data)
+
+            # If file exist open file and write data to it
+            with open("data.json", "w") as data_file:
+                # Saving updated data
+                json.dump(load_data, data_file, indent=4)
+        finally:
+            # Delete entries
             website_input.delete(0, END)
             username_input.delete(0, END)
             password_input.delete(0, END)
-            
-            print("data = " , data)
 
-            with open('data.txt', 'a') as file:
-                file.write("\n")
-                for element in data:
-                    file.write(element)
-                    file.write(" | ")
-                file.write("\n-------------------------")
+#################
+# FIND PASSWORD #
+#################
 
+def search_data():
+    website = website_input.get()
+
+    if len(website) == 0:
+        messagebox.showinfo(title="Oops", message="Please don't leave website field empty.")
+    else:
+        try:
+            with open('data.json', 'r') as data_file:
+                # reading old data
+                load_data = json.load(data_file)
+        # If json file doesn't exist send error message
+        except FileNotFoundError:
+            messagebox.showinfo(title="Oops", message="You haven't saved any passwords")
+        else:
+            if website in load_data:
+                username = load_data[website]["username"]
+                password = load_data[website]["password"]
+
+                messagebox.showinfo(title=website, message=f"Username : {username} \n Password : {password}")
+            else:
+                messagebox.showinfo(title="Website not found", message=f"the website {website}'s username and password "
+                                    "has not been saved yet")
+        finally:
+            website_input.delete(0, END)
+
+    
 
 
 
@@ -82,32 +123,35 @@ username_label = Label(text="E-mail/Username:", bg="White")
 password_label = Label(text="Password", bg="White")
 
 # Place Labels
-website_label.grid(column=0, row=1)
-username_label.grid(column=0, row=2)
-password_label.grid(column=0, row=3)
+website_label.grid(column=0, row=1, pady=10)
+username_label.grid(column=0, row=2, pady=10)
+password_label.grid(column=0, row=3, pady=10)
 
 # Entry
 # Create Entry
-website_input = Entry(width=40)
-username_input = Entry(width=40)
-password_input = Entry(width=22)
+website_input = Entry(width=22, highlightthickness=2, highlightbackground="grey")
+username_input = Entry(width=40, highlightthickness=2, highlightbackground="grey")
+password_input = Entry(width=22, highlightthickness=2, highlightbackground="grey")
 
 
 # Place Entry
-website_input.grid(column=1, columnspan=2, row=1)
+website_input.grid(column=1, row=1, pady=10)
 website_input.focus()
-username_input.grid(column=1, columnspan=2, row=2)
+username_input.grid(column=1, columnspan=2, row=2, pady=10)
 username_input.insert(0, "djiles@mail.sfsu.edu")
-password_input.grid(column=1, row=3)
+password_input.grid(column=1, row=3, pady=10)
 
 # Button
 # Create Button
+search_button = Button(text="Search", width=15 , command=search_data)
 generate_button = Button(text="Generate Password", command=generate_password)
 add_button = Button(text="Add", width=36, command=save_password)
 
+
 # Place Button
-generate_button.grid(column=2, row=3)
-add_button.grid(column=1, columnspan=2, row=4)
+search_button.grid(column=2, row=1, pady=10)
+generate_button.grid(column=2, row=3, pady=10)
+add_button.grid(column=1, columnspan=2, row=4, pady=10)
 
 
 
